@@ -10,7 +10,7 @@ import UIKit
 
 class ViewController: UITableViewController {
     
-    let itemArray = [
+    var itemArray = [
         "Find nemo",
         "Tortoise"
     ]
@@ -18,6 +18,26 @@ class ViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+    }
+    
+    @IBAction func onAddButtonPressed(_ sender: UIBarButtonItem) {
+        
+        var textField: UITextField = UITextField()
+        
+        let alert = UIAlertController(title: "Add todo item", message: "", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Add Item", style: .default){ (action) in
+            if let safeText = textField.text{
+                self.itemArray.append(safeText)
+                self.tableView.reloadData()
+            }
+        }
+        alert.addTextField { alertTextField in
+            textField = alertTextField
+            alertTextField.placeholder = "Create new item"
+        }
+        alert.addAction(action)
+        
+        present(alert, animated: true, completion: nil)
     }
     
     override func numberOfSections(in tableView: UITableView) -> Int {
