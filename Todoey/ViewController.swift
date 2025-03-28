@@ -11,13 +11,14 @@ import UIKit
 class ViewController: UITableViewController {
     
     var itemArray = [Item]()
-    let userDefaults = UserDefaults.standard
 
+    let filePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        .first?.appendingPathComponent("items.plist")
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        //if let items = userDefaults.array(forKey: "todo_items") as? [Item]{
-        //    itemArray = items
-        //}
+        print(filePath!)
+        loadItems()
         // Do any additional setup after loading the view.
     }
     
@@ -32,7 +33,7 @@ class ViewController: UITableViewController {
                     title: safeText, isChecked: false
                 )
                 self.itemArray.append(newItem)
-                //self.userDefaults.set(self.itemArray, forKey: "todo_items")
+                self.saveItems()
                 self.tableView.reloadData()
             }
         }
@@ -57,17 +58,35 @@ class ViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         let itemForRow = itemArray[indexPath.row]
         cell.textLabel?.text = itemForRow.title
-        cell.accessoryType = if(itemForRow.isChecked){
-            .checkmark
-        } else {
-            .none
-        }
+        cell.accessoryType = itemForRow.isChecked ? .checkmark : .none
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         itemArray[indexPath.row].isChecked = !itemArray[indexPath.row].isChecked
+        saveItems()
         tableView.reloadData()
+    }
+    
+    private func saveItems(){
+        let encoder = PropertyListEncoder()
+        do{
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: self.filePath!)
+        } catch{
+            print("Error while encoding \(error.localizedDescription)")
+        }
+    }
+    
+    private func loadItems(){
+        if let data = try? Data(contentsOf: filePath!){
+            let decoder = PropertyListDecoder()
+            do{
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch{
+                print("Error decoding Array \(error.localizedDescription)")
+            }
+        }
     }
 }
 
