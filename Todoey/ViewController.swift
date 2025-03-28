@@ -10,13 +10,14 @@ import UIKit
 
 class ViewController: UITableViewController {
     
-    var itemArray = [
-        "Find nemo",
-        "Tortoise"
-    ]
+    var itemArray = [Item]()
+    let userDefaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        //if let items = userDefaults.array(forKey: "todo_items") as? [Item]{
+        //    itemArray = items
+        //}
         // Do any additional setup after loading the view.
     }
     
@@ -27,7 +28,11 @@ class ViewController: UITableViewController {
         let alert = UIAlertController(title: "Add todo item", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add Item", style: .default){ (action) in
             if let safeText = textField.text{
-                self.itemArray.append(safeText)
+                let newItem = Item(
+                    title: safeText, isChecked: false
+                )
+                self.itemArray.append(newItem)
+                //self.userDefaults.set(self.itemArray, forKey: "todo_items")
                 self.tableView.reloadData()
             }
         }
@@ -50,17 +55,19 @@ class ViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        cell.textLabel?.text = itemArray[indexPath.row]
+        let itemForRow = itemArray[indexPath.row]
+        cell.textLabel?.text = itemForRow.title
+        cell.accessoryType = if(itemForRow.isChecked){
+            .checkmark
+        } else {
+            .none
+        }
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        } else {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
-        
+        itemArray[indexPath.row].isChecked = !itemArray[indexPath.row].isChecked
+        tableView.reloadData()
     }
 }
 
