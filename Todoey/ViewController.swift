@@ -7,19 +7,24 @@
 //
 
 import UIKit
+import CoreData
 
-class ViewController: UITableViewController {
+class ViewController: UITableViewController, UISearchBarDelegate {
     
-    var itemArray = [Item]()
-
-    let filePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        .first?.appendingPathComponent("items.plist")
+    var itemArray: [Item] = [Item]()
+    
+    @IBOutlet weak var searchBar: UISearchBar!
+    let context = ((UIApplication.shared.delegate) as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        print(filePath!)
         loadItems()
+        searchBar.delegate = self
         // Do any additional setup after loading the view.
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        print(searchBar.text!)
     }
     
     @IBAction func onAddButtonPressed(_ sender: UIBarButtonItem) {
@@ -30,8 +35,10 @@ class ViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default){ (action) in
             if let safeText = textField.text{
                 let newItem = Item(
-                    title: safeText, isChecked: false
+                    context: self.context
                 )
+                newItem.title = safeText
+                newItem.isChecked = false
                 self.itemArray.append(newItem)
                 self.saveItems()
                 self.tableView.reloadData()
@@ -64,28 +71,26 @@ class ViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         itemArray[indexPath.row].isChecked = !itemArray[indexPath.row].isChecked
+        context.delete(itemArray[indexPath.row])
+        itemArray.remove(at: indexPath.row)
         saveItems()
         tableView.reloadData()
     }
     
     private func saveItems(){
-        let encoder = PropertyListEncoder()
         do{
-            let data = try encoder.encode(self.itemArray)
-            try data.write(to: self.filePath!)
+             try context.save()
         } catch{
-            print("Error while encoding \(error.localizedDescription)")
+            print("Error while saving \(error.localizedDescription)")
         }
     }
     
     private func loadItems(){
-        if let data = try? Data(contentsOf: filePath!){
-            let decoder = PropertyListDecoder()
-            do{
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch{
-                print("Error decoding Array \(error.localizedDescription)")
-            }
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do{
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetch while fetching")
         }
     }
 }
