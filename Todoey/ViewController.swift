@@ -13,12 +13,17 @@ class ViewController: UITableViewController {
     
     var itemArray: [Item] = [Item]()
     
+    var selectedCategory: Category? {
+        didSet{
+            loadItems()
+        }
+    }
+    
     @IBOutlet weak var searchBar: UISearchBar!
     let context = ((UIApplication.shared.delegate) as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadItems()
         searchBar.delegate = self
         // Do any additional setup after loading the view.
     }
@@ -35,6 +40,7 @@ class ViewController: UITableViewController {
                 )
                 newItem.title = safeText
                 newItem.isChecked = false
+                newItem.parentCategory = self.selectedCategory!
                 self.itemArray.append(newItem)
                 self.saveItems()
                 self.tableView.reloadData()
@@ -82,6 +88,8 @@ class ViewController: UITableViewController {
     }
     
     private func loadItems(_ request: NSFetchRequest<Item> = Item.fetchRequest()){
+        let predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!)
+        request.predicate = predicate
         do{
             itemArray = try context.fetch(request)
         } catch {
