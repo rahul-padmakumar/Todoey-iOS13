@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-class ViewController: UITableViewController, UISearchBarDelegate {
+class ViewController: UITableViewController {
     
     var itemArray: [Item] = [Item]()
     
@@ -21,10 +21,6 @@ class ViewController: UITableViewController, UISearchBarDelegate {
         loadItems()
         searchBar.delegate = self
         // Do any additional setup after loading the view.
-    }
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        print(searchBar.text!)
     }
     
     @IBAction func onAddButtonPressed(_ sender: UIBarButtonItem) {
@@ -85,12 +81,35 @@ class ViewController: UITableViewController, UISearchBarDelegate {
         }
     }
     
-    private func loadItems(){
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+    private func loadItems(_ request: NSFetchRequest<Item> = Item.fetchRequest()){
         do{
             itemArray = try context.fetch(request)
         } catch {
             print("Error fetch while fetching")
+        }
+    }
+}
+
+// Mark - Search Bar delegate
+
+extension ViewController: UISearchBarDelegate{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        if let safeText = searchBar.text{
+            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", safeText)
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+            loadItems(request)
+            tableView.reloadData()
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.isEmpty{
+            loadItems()
+            tableView.reloadData()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
         }
     }
 }
