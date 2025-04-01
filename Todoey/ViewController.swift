@@ -73,8 +73,6 @@ class ViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         itemArray[indexPath.row].isChecked = !itemArray[indexPath.row].isChecked
-        context.delete(itemArray[indexPath.row])
-        itemArray.remove(at: indexPath.row)
         saveItems()
         tableView.reloadData()
     }
@@ -87,9 +85,16 @@ class ViewController: UITableViewController {
         }
     }
     
-    private func loadItems(_ request: NSFetchRequest<Item> = Item.fetchRequest()){
-        let predicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!)
-        request.predicate = predicate
+    private func loadItems(_ request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil){
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory?.name ?? "")
+        
+        if predicate == nil{
+            request.predicate = categoryPredicate
+        } else {
+            let compoundPredicate = NSCompoundPredicate(type: .and, subpredicates: [predicate!, categoryPredicate])
+            request.predicate = compoundPredicate
+        }
         do{
             itemArray = try context.fetch(request)
         } catch {
@@ -104,9 +109,8 @@ extension ViewController: UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
         if let safeText = searchBar.text{
-            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", safeText)
             request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-            loadItems(request)
+            loadItems(request, predicate: NSPredicate(format: "title CONTAINS[cd] %@", safeText))
             tableView.reloadData()
         }
     }
