@@ -7,11 +7,12 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
     
-    private var categories = [Category]()
+    private var categories: Results<Category>?
+    private let realm = try! Realm(configuration: Realm.Configuration(deleteRealmIfMigrationNeeded: true))
     
     @IBAction func onAddButtonPressed(_ sender: UIBarButtonItem) {
         var alertTextField: UITextField = UITextField()
@@ -19,12 +20,9 @@ class CategoryViewController: UITableViewController {
         let alertController = UIAlertController(title: "Add category", message: "", preferredStyle: .alert)
         let alertAction = UIAlertAction(title: "Add Category", style: .default) { action in
             if let text = alertTextField.text{
-                let category = Category(
-                    context: self.context
-                )
+                let category = Category()
                 category.name = text
-                self.categories.append(category)
-                self.saveCatorgories()
+                self.saveCategories(category)
                 self.tableView.reloadData()
             }
         }
@@ -35,25 +33,21 @@ class CategoryViewController: UITableViewController {
         alertController.addAction(alertAction)
         present(alertController, animated: true, completion: nil)
     }
-    private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         fetchCategories()
     }
     
     private func fetchCategories(){
-        let fetchRequest: NSFetchRequest<Category> = Category.fetchRequest()
-        do{
-            categories = try context.fetch(fetchRequest)
-        } catch {
-            print("Fetch request failed \(error)")
-        }
+        categories = realm.objects(Category.self)
     }
     
-    private func saveCatorgories(){
+    private func saveCategories(_ category: Category){
         do{
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error while saving category \(error)")
         }
@@ -64,7 +58,7 @@ class CategoryViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        return categories?.count ?? 0
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -74,13 +68,15 @@ class CategoryViewController: UITableViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         let destVC = segue.destination as! ViewController
         if let selectedPath = tableView.indexPathForSelectedRow{
-            destVC.selectedCategory = categories[selectedPath.row]
+            if let category = categories?[selectedPath.row]{
+                destVC.selectedCategory = category
+            }
         }
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "todo_category", for: indexPath)
-        cell.textLabel?.text = categories[indexPath.row].name
+        cell.textLabel?.text = categories?[indexPath.row].name ?? ""
         return cell
     }
 }

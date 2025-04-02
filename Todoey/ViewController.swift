@@ -7,11 +7,13 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ViewController: UITableViewController {
     
-    var itemArray: [Item] = [Item]()
+    var itemArray: Results<Item>?
+    
+    let realm = try! Realm(configuration: Realm.Configuration(deleteRealmIfMigrationNeeded: true))
     
     var selectedCategory: Category? {
         didSet{
@@ -20,7 +22,6 @@ class ViewController: UITableViewController {
     }
     
     @IBOutlet weak var searchBar: UISearchBar!
-    let context = ((UIApplication.shared.delegate) as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,14 +36,19 @@ class ViewController: UITableViewController {
         let alert = UIAlertController(title: "Add todo item", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add Item", style: .default){ (action) in
             if let safeText = textField.text{
-                let newItem = Item(
-                    context: self.context
-                )
-                newItem.title = safeText
-                newItem.isChecked = false
-                newItem.parentCategory = self.selectedCategory!
-                self.itemArray.append(newItem)
-                self.saveItems()
+                if let category = self.selectedCategory{
+                    do{
+                        try self.realm.write{
+                            let newItem = Item()
+                            newItem.title = safeText
+                            newItem.isChecked = false
+                            newItem.dateCreated = Date()
+                            category.items.append(newItem)
+                        }
+                    } catch {
+                        print("Error in saving item")
+                    }
+                }
                 self.tableView.reloadData()
             }
         }
@@ -60,46 +66,30 @@ class ViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return itemArray?.count ?? 0
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        let itemForRow = itemArray[indexPath.row]
-        cell.textLabel?.text = itemForRow.title
-        cell.accessoryType = itemForRow.isChecked ? .checkmark : .none
+        let itemForRow = itemArray?[indexPath.row]
+        cell.textLabel?.text = itemForRow?.title ?? ""
+        cell.accessoryType = itemForRow?.isChecked ?? false ? .checkmark : .none
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        itemArray[indexPath.row].isChecked = !itemArray[indexPath.row].isChecked
-        saveItems()
+        do{
+            try realm.write{
+                itemArray?[indexPath.row].isChecked = !(itemArray?[indexPath.row].isChecked ?? false)
+            }
+        } catch{
+            print("Save error while updating check mark")
+        }
         tableView.reloadData()
     }
     
-    private func saveItems(){
-        do{
-             try context.save()
-        } catch{
-            print("Error while saving \(error.localizedDescription)")
-        }
-    }
-    
-    private func loadItems(_ request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil){
-        
-        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory?.name ?? "")
-        
-        if predicate == nil{
-            request.predicate = categoryPredicate
-        } else {
-            let compoundPredicate = NSCompoundPredicate(type: .and, subpredicates: [predicate!, categoryPredicate])
-            request.predicate = compoundPredicate
-        }
-        do{
-            itemArray = try context.fetch(request)
-        } catch {
-            print("Error fetch while fetching")
-        }
+    private func loadItems(){
+        itemArray = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: true)
     }
 }
 
@@ -107,12 +97,11 @@ class ViewController: UITableViewController {
 
 extension ViewController: UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        if let safeText = searchBar.text{
-            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-            loadItems(request, predicate: NSPredicate(format: "title CONTAINS[cd] %@", safeText))
-            tableView.reloadData()
-        }
+        print(searchBar.text!)
+        itemArray = itemArray?.where({ query in
+            query.title.contains(searchBar.text!)
+        }).sorted(byKeyPath: "dateCreated", ascending: true)
+        tableView.reloadData()
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
