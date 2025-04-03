@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     private var categories: Results<Category>?
     private let realm = try! Realm(configuration: Realm.Configuration(deleteRealmIfMigrationNeeded: true))
@@ -78,5 +78,22 @@ class CategoryViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "todo_category", for: indexPath)
         cell.textLabel?.text = categories?[indexPath.row].name ?? ""
         return cell
+    }
+    
+    override func deleteItem(index: Int) {
+        if let item = self.categories?[index]{
+            do{
+                try self.realm.write{
+                    self.realm.delete(item)
+                    self.tableView.reloadData()
+                }
+            } catch {
+                print("Delete error \(error)")
+            }
+        }
+    }
+    
+    override func getElementNameAt(index: Int) -> String {
+        return self.categories?[index].name ?? ""
     }
 }

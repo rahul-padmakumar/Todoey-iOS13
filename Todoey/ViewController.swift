@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class ViewController: UITableViewController {
+class ViewController: SwipeTableViewController {
     
     var itemArray: Results<Item>?
     
@@ -88,38 +88,21 @@ class ViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-    
-        let deleteAction = UIContextualAction(
-            style: .destructive, title: nil) { _, _, completion in
-                
-                if let item = self.itemArray?[indexPath.row]{
-                    do{
-                        try self.realm.write{
-                            self.realm.delete(item)
-                            self.tableView.reloadData()
-                        }
-                    } catch {
-                        print("Delete error \(error)")
-                    }
+    override func deleteItem(index: Int) {
+        if let item = self.itemArray?[index]{
+            do{
+                try self.realm.write{
+                    self.realm.delete(item)
+                    self.tableView.reloadData()
                 }
-                
-                completion(true)
+            } catch {
+                print("Delete error \(error)")
             }
-        deleteAction.image = UIImage(systemName: "trash")
-        deleteAction.backgroundColor = .blue
-        return UISwipeActionsConfiguration(actions: [deleteAction])
+        }
     }
     
-    override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let printAction = UIContextualAction(
-            style: .normal, title: nil) { _, _, completion in
-                print(self.itemArray?[indexPath.row] ?? "")
-                completion(true)
-            }
-        printAction.image = UIImage(systemName: "printer")
-        printAction.backgroundColor = .orange
-        return UISwipeActionsConfiguration(actions: [printAction])
+    override func getElementNameAt(index: Int) -> String {
+        return self.itemArray?[index].title ?? ""
     }
     
     private func loadItems(){
