@@ -88,6 +88,36 @@ class ViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+        return UITableViewCell.EditingStyle.delete
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete{
+            if let item = self.itemArray?[indexPath.row]{
+                do{
+                    try realm.write{
+                        realm.delete(item)
+                    }
+                } catch {
+                    print("Delete error \(error)")
+                }
+            }
+            self.tableView.reloadData()
+        }
+    }
+    
+//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+//    
+//        let deleteAction = UIContextualAction(
+//            style: .destructive, title: nil) { _, _, completion in
+//                completion(true)
+//            }
+//        deleteAction.image = UIImage(systemName: "trash")
+//        deleteAction.backgroundColor = .blue
+//        return UISwipeActionsConfiguration(actions: [deleteAction])
+//    }
+    
     private func loadItems(){
         itemArray = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: true)
     }
