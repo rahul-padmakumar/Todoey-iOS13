@@ -22,6 +22,7 @@ class CategoryViewController: SwipeTableViewController {
             if let text = alertTextField.text{
                 let category = Category()
                 category.name = text
+                category.color = UIColor.random().getHexValue()
                 self.saveCategories(category)
                 self.tableView.reloadData()
             }
@@ -37,6 +38,13 @@ class CategoryViewController: SwipeTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         fetchCategories()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let navBar = navigationController?.navigationBar{
+            navBar.backgroundColor = .green
+            navBar.tintColor = .white
+        }
     }
     
     private func fetchCategories(){
@@ -77,6 +85,9 @@ class CategoryViewController: SwipeTableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "todo_category", for: indexPath)
         cell.textLabel?.text = categories?[indexPath.row].name ?? ""
+        let bgColor = categories?[indexPath.row].color.getUIColor() ?? .cyan
+        cell.backgroundColor = bgColor
+        cell.textLabel?.textColor = bgColor.getContrastColor()
         return cell
     }
     

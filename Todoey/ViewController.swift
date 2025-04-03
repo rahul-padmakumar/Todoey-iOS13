@@ -29,6 +29,17 @@ class ViewController: SwipeTableViewController {
         // Do any additional setup after loading the view.
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        if let navBar = navigationController?.navigationBar{
+            let uiColor = selectedCategory?.color.getUIColor() ?? UIColor.cyan
+            navBar.backgroundColor = uiColor
+            navBar.tintColor = uiColor.getContrastColor()
+            
+            searchBar.barTintColor = uiColor
+            searchBar.searchTextField.backgroundColor = .white
+        }
+    }
+    
     @IBAction func onAddButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField: UITextField = UITextField()
@@ -72,8 +83,15 @@ class ViewController: SwipeTableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
         let itemForRow = itemArray?[indexPath.row]
+        let uiColor = selectedCategory?.color.getUIColor().withAlphaComponent(
+            CGFloat(indexPath.row + 1)/CGFloat(itemArray?.count ?? 1)) ?? UIColor.cyan
+        
         cell.textLabel?.text = itemForRow?.title ?? ""
+        
+        cell.backgroundColor = uiColor
+        cell.textLabel?.textColor = uiColor.getContrastColor()
         cell.accessoryType = itemForRow?.isChecked ?? false ? .checkmark : .none
+        
         return cell
     }
     
