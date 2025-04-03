@@ -108,7 +108,15 @@ class ViewController: UITableViewController {
             }
         deleteAction.image = UIImage(systemName: "trash")
         deleteAction.backgroundColor = .blue
-        return UISwipeActionsConfiguration(actions: [deleteAction])
+        
+        let printAction = UIContextualAction(
+            style: .normal, title: nil) { _, _, completion in
+                print(self.itemArray?[indexPath.row] ?? "")
+                completion(true)
+            }
+        printAction.image = UIImage(systemName: "printer")
+        deleteAction.backgroundColor = .orange
+        return UISwipeActionsConfiguration(actions: [deleteAction, printAction])
     }
     
     private func loadItems(){
